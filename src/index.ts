@@ -1,7 +1,8 @@
-import ts, { createProgram, forEachChild, formatDiagnostics, isTypeAliasDeclaration, ModuleKind, ModuleResolutionKind, parseConfigFileTextToJson, parseJsonConfigFileContent, ScriptTarget, Symbol, SymbolFlags, SymbolFormatFlags, sys, TypeAliasDeclaration, TypeFormatFlags } from "typescript";
+import ts from "typescript";
 import { readFileSync, writeFileSync } from "fs";
+import { resolve, dirname } from 'path';
 
-function getGenericsOfTypeDeclaration(node: TypeAliasDeclaration): string {
+const getGenericsOfTypeDeclaration = (node: ts.TypeAliasDeclaration): string => {
     if (node.typeParameters) {
         return '<' + node.typeParameters.map(tp => {
             let genericStr = tp.name.text;
@@ -14,34 +15,50 @@ function getGenericsOfTypeDeclaration(node: TypeAliasDeclaration): string {
         }).join(', ') + '>';
     }
     return '';
-}
+};
 
-function getCompilerOptionsFromTsConfig(tsconfigPath: string): ts.CompilerOptions {
+const findTsConfigPath = (startDir: string): string | null => {
+    let currentDir = startDir;
+
+    while (currentDir && currentDir !== '/') {
+        const potentialPath = resolve(currentDir, 'tsconfig.json');
+
+        if (ts.sys.fileExists(potentialPath)) {
+            return potentialPath;
+        }
+
+        currentDir = dirname(currentDir);
+    }
+
+    return null;
+};
+
+const getCompilerOptionsFromTsConfig = (tsconfigPath: string): ts.CompilerOptions => {
     const configFileText = readFileSync(tsconfigPath).toString();
-    const result = parseConfigFileTextToJson(tsconfigPath, configFileText);
+    const result = ts.parseConfigFileTextToJson(tsconfigPath, configFileText);
     if (result.error) {
-        throw new Error(formatDiagnostics([result.error], {
+        throw new Error(ts.formatDiagnostics([result.error], {
             getCanonicalFileName: (fileName: string) => fileName,
             getCurrentDirectory: process.cwd,
-            getNewLine: () => sys.newLine
+            getNewLine: () => ts.sys.newLine
         }));
     }
     
     const configObject = result.config;
-    const configParseResult = parseJsonConfigFileContent(configObject, ts.sys, process.cwd(), undefined, tsconfigPath);
+    const configParseResult = ts.parseJsonConfigFileContent(configObject, ts.sys, process.cwd(), undefined, tsconfigPath);
     if (configParseResult.errors && configParseResult.errors.length > 0) {
-        throw new Error(formatDiagnostics(configParseResult.errors, {
+        throw new Error(ts.formatDiagnostics(configParseResult.errors, {
             getCanonicalFileName: (fileName: string) => fileName,
             getCurrentDirectory: process.cwd,
-            getNewLine: () => sys.newLine
+            getNewLine: () => ts.sys.newLine
         }));
     }
 
     return configParseResult.options;
-}
+};
 
-function extractTypesFromSourceFile(filePath: string): string[] {
-    const program = createProgram([filePath], getCompilerOptionsFromTsConfig('./tsconfig.json'));
+const extractTypesFromSourceFile = (filePath: string, declarations: boolean): string[] => {
+    const program = ts.createProgram([filePath], getCompilerOptionsFromTsConfig(findTsConfigPath(process.cwd()) || './tsconfig.json'));
     const checker = program.getTypeChecker();
     const sourceFile = program.getSourceFile(filePath);
     if (!sourceFile) {
@@ -50,30 +67,29 @@ function extractTypesFromSourceFile(filePath: string): string[] {
 
     const res: string[] = [];
 
-    const processType = (node: TypeAliasDeclaration) => {
+    const processType = (node: ts.TypeAliasDeclaration) => {
         const nodeType = checker.getTypeFromTypeNode(node.type);
         let str = "";
         if (nodeType.isUnionOrIntersection()) {
-            str = nodeType.types.map(t => checker.typeToString(t, undefined, TypeFormatFlags.NoTruncation)).join(' | ');
+            str = nodeType.types.map(t => checker.typeToString(t, undefined, ts.TypeFormatFlags.NoTruncation)).join(' | ');
         } else {
-            str = checker.typeToString(nodeType, undefined, TypeFormatFlags.NoTruncation);
+            str = checker.typeToString(nodeType, undefined, ts.TypeFormatFlags.NoTruncation);
         }
-        res.push(`export type ${node.name.getText()}${getGenericsOfTypeDeclaration(node)} = ${str}`);
+        res.push(`export ${declarations ? 'declare ' : ''}type ${node.name.getText()}${getGenericsOfTypeDeclaration(node)} = ${str}`);
     
         return res;
     }
 
-    forEachChild(sourceFile, node => {
-        if (isTypeAliasDeclaration(node)) {
+    ts.forEachChild(sourceFile, node => {
+        if (ts.isTypeAliasDeclaration(node)) {
             processType(node);
         }
     });
 
     return res;
-}
+};
 
-const filePath = './res/models.ts';
-const extractedTypes = extractTypesFromSourceFile(filePath);
-const outputFilePath = './out/out.ts';
-
-writeFileSync(outputFilePath, extractedTypes.join('\n'), 'utf8');
+export const cloneTypes = (filePath: string, outputFilePath: string) => {
+    const extractedTypes = extractTypesFromSourceFile(filePath, outputFilePath.endsWith('.d.ts'));
+    writeFileSync(outputFilePath, extractedTypes.join('\n'), 'utf8');
+};

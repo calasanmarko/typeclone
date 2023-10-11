@@ -2,9 +2,13 @@
   "name": "typeclone",
   "version": "1.0.0",
   "description": "Deeply expands TypeScript types into their own declaration file. ",
+  "type": "module",
   "main": "index.js",
+  "bin": {
+    "typeclone": "cli.js"
+  },
   "scripts": {
-    "debug": "nodemon --inspect app.js"
+    "publish-npm": "tsc --outDir ./dist && (cp package.json ./dist || xcopy package.json dist /Y) && (cp README.md ./dist || xcopy README.md dist /Y)"
   },
   "repository": {
     "type": "git",
