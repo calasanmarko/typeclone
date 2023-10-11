@@ -71,7 +71,8 @@ const extractTypesFromSourceFile = (filePath: string, declarations: boolean): st
         const nodeType = checker.getTypeFromTypeNode(node.type);
         let str = "";
         if (nodeType.isUnionOrIntersection()) {
-            str = nodeType.types.map(t => checker.typeToString(t, undefined, ts.TypeFormatFlags.NoTruncation)).join(' | ');
+            const isUnion = nodeType.isUnion();
+            str = nodeType.types.map(t => checker.typeToString(t, undefined, ts.TypeFormatFlags.NoTruncation)).join(` ${isUnion ? '|' : '&'} `);
         } else {
             str = checker.typeToString(nodeType, undefined, ts.TypeFormatFlags.NoTruncation);
         }

@@ -1,6 +1,6 @@
 {
   "name": "typeclone",
-  "version": "1.0.1",
+  "version": "1.0.3",
   "description": "Deeply expands TypeScript types into their own declaration file. ",
   "type": "module",
   "main": "index.js",
