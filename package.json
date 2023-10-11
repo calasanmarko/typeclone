@@ -1,0 +1,36 @@
+{
+  "name": "typeclone",
+  "version": "1.0.0",
+  "description": "Deeply expands TypeScript types into their own declaration file. ",
+  "main": "index.js",
+  "scripts": {
+    "debug": "nodemon --inspect app.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/calasanmarko/typeclone.git"
+  },
+  "keywords": [
+    "typescript",
+    "ts",
+    "types",
+    "clone",
+    "compiler",
+    "transipler",
+    "declaration",
+    "utility",
+    "build"
+  ],
+  "author": "Marko Calasan",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/calasanmarko/typeclone/issues"
+  },
+  "homepage": "https://github.com/calasanmarko/typeclone#readme",
+  "dependencies": {
+    "typescript": "^5.2.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.8.4"
+  }
+}
