@@ -20,7 +20,7 @@
     "types",
     "clone",
     "compiler",
-    "transipler",
+    "transpiler",
     "declaration",
     "utility",
     "build"
