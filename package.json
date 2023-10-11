@@ -8,7 +8,7 @@
     "typeclone": "cli.js"
   },
   "scripts": {
-    "publish-npm": "tsc --outDir ./dist && (cp package.json ./dist || xcopy package.json dist /Y) && (cp README.md ./dist || xcopy README.md dist /Y)"
+    "publish-npm": "tsc --outDir ./dist && (cp package.json ./dist || xcopy package.json dist /Y) && (cp README.md ./dist || xcopy README.md dist /Y) && (cp LICENSE ./dist || xcopy LICENSE dist /Y) && cd ./dist && npm publish && cd .."
   },
   "repository": {
     "type": "git",
